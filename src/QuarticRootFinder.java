@@ -8,7 +8,7 @@ public class QuarticRootFinder {
     }
 
     public double[] QuarticRoot(double c[]){
-        double[] coeffs = new double[4];
+        double[] newc = new double[4];
         double[] solution;
 
         // normalised form: x^4 + Ax^3 + Bx^2 + Cx + D = 0
@@ -25,30 +25,30 @@ public class QuarticRootFinder {
 
         if (IsZero(r)){
             // no absolute term: y(y^3 + py + q) = 0
-            coeffs[0] = q;
-            coeffs[1] = p;
-            coeffs[2] = 0;
-            coeffs[3] = 1;
-            double[] ans = CubicRoot(coeffs);
+            newc[0] = q;
+            newc[1] = p;
+            newc[2] = 0;
+            newc[3] = 1;
+            double[] ans = CubicRoot(newc);
             solution = new double[ans.length+1];
             for (int i = 0; i < ans.length; i ++) solution[i] = ans[i];
             solution[ans.length] = 0;
 
         } else{
             // solve the resolvent cubic ...
-            coeffs[ 0 ] = 1.0 / 2.0 * r * p - 1.0 / 8.0 * q * q;
-            coeffs[ 1 ] = - r;
-            coeffs[ 2 ] = - 1.0 / 2.0 * p;
-            coeffs[ 3 ] = 1;
+            newc[ 0 ] = 1.0 / 2.0 * r * p - 1.0 / 8.0 * q * q;
+            newc[ 1 ] = - r;
+            newc[ 2 ] = - 1.0 / 2.0 * p;
+            newc[ 3 ] = 1;
 
             double[] psolution;
-            psolution = CubicRoot(coeffs);
+            psolution = CubicRoot(newc);
 
-            // ... and take the one real solution ...
+            // take the one real solution
             double z,u,v;
             z = psolution[ 0 ];
 
-            // ... to build two quadric equations
+            // build two quadric equations
             u = z * z - r;
             v = 2 * z - p;
 
@@ -60,26 +60,25 @@ public class QuarticRootFinder {
             else if (v > 0) { v = Math.sqrt(v); }
             else { return new double[]{}; }
 
-            coeffs[ 0 ] = z - u;
-            coeffs[ 1 ] = q < 0 ? -v : v;
-            coeffs[ 2 ] = 1;
+            newc[ 0 ] = z - u;
+            newc[ 1 ] = q < 0 ? -v : v;
+            newc[ 2 ] = 1;
 
-            psolution = QuadricRoot(coeffs);
+            psolution = QuadricRoot(newc);
 
-            coeffs[ 0 ]= z + u;
-            coeffs[ 1 ] = q < 0 ? v : -v;
-            coeffs[ 2 ] = 1;
+            newc[ 0 ]= z + u;
+            newc[ 1 ] = q < 0 ? v : -v;
+            newc[ 2 ] = 1;
 
-            double[] qsolution = QuadricRoot(coeffs);
+            double[] qsolution = QuadricRoot(newc);
 
-            // concatenate psolution + qsolution
+            // concatenate psolution + qsolution... can use ArrayList instead
             solution = new double[psolution.length + qsolution.length];
             for (int i = 0; i < psolution.length; i ++) solution[i] = psolution[i];
             for (int i = 0; i < qsolution.length; i ++) solution[i+psolution.length] = qsolution[i];
         }
 
-        /* resubstitute */
-
+        // resubstitute
         double sub = 1.0/4 * A;
         for (int i = 0; i < solution.length; i ++)
             solution[i] -= sub;
@@ -101,7 +100,7 @@ public class QuarticRootFinder {
         double p = 1.0 / 3 * (- 1.0 / 3 * squareA + B);
         double q = 1.0 / 2 * (2.0 / 27 * A * squareA - 1.0 / 3 * A * B + C);
 
-        /* use Cardano's formula */
+        // use Cardano's formula
         double cubicp = p * p * p;
         double D = q * q + cubicp;
 
@@ -126,7 +125,7 @@ public class QuarticRootFinder {
             solution = new double[]{u + v};
         }
 
-        /* resubstitute */
+        // resubstitute
         double sub = 1.0 / 3 * A;
         for (int i = 0; i < solution.length; ++i)
             solution[i] -= sub;

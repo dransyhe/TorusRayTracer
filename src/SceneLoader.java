@@ -42,6 +42,13 @@ public class SceneLoader {
                     scene.addPointLight(light);
                     break;
 
+                case "torus":
+                    Torus torus = new Torus(getPosition(element), getDouble(element, "radius_torus", 1),
+                            getDouble(element, "radius_tube", 1), getColour(element),
+                            getDouble(element, "kD", 0.8), getDouble(element, "kS", 1.2),
+                            getDouble(element, "alphaS", 10), getDouble(element, "reflectivity", 0.3));
+                    scene.addObject(torus);
+
                 case "ambient-light":
                     scene.setAmbientLight(getColour(element).scale(getDouble(element, "intensity", 1)));
                     break;

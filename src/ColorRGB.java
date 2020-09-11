@@ -1,4 +1,3 @@
-
 public class ColorRGB {
 
     // Vector3 member field

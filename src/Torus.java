@@ -2,10 +2,10 @@ import java.awt.*;
 
 public class Torus extends SceneObject{
 
+    // torus parameters
+    private Vector3 position;
     private double radius_torus;
     private double radius_tube;
-    private double phi;
-    private double theta;
 
     // surface coefficients
     private final double TORUS_KD = 0.8;
@@ -13,11 +13,10 @@ public class Torus extends SceneObject{
     private final double TORUS_ALPHA = 10;
     private final double TORUS_REFLECTIVITY = 0.3;
 
-    public Torus(double radius_torus, double radius_tube, double phi, double theta, ColorRGB colour){
+    public Torus(Vector3 position, double radius_torus, double radius_tube, ColorRGB colour){
+        this.position = position;
         this.radius_torus = radius_torus;
         this.radius_tube = radius_tube;
-        this.phi = phi;
-        this.theta = theta;
         this.colour = colour;
         this.phong_kD = TORUS_KD;
         this.phong_kS = TORUS_KS;
@@ -25,12 +24,11 @@ public class Torus extends SceneObject{
         this.reflectivity = TORUS_REFLECTIVITY;
     }
 
-    public Torus(double radius_torus, double radius_tube, double phi, double theta, ColorRGB colour,
+    public Torus(Vector3 position, double radius_torus, double radius_tube, ColorRGB colour,
                  double kD, double kS, double alphaS, double reflectivity) {
+        this.position = position;
         this.radius_torus = radius_torus;
         this.radius_tube = radius_tube;
-        this.phi = phi;
-        this.theta = theta;
         this.colour = colour;
         this.phong_kD = kD;
         this.phong_kS = kS;
@@ -40,19 +38,21 @@ public class Torus extends SceneObject{
 
     @Override
     public RaycastHit intersectionWith(Ray ray) {
+        // get torus parameters
+        double R = this.radius_torus;
+        double r = this.radius_tube;
+        Vector3 C = this.position;
+
         // get ray parameters
-        Vector3 E = ray.getOrigin();
+        Vector3 E = ray.getOrigin().subtract(C);
         Vector3 D = ray.getDirection();
+
         double xe = E.x;
         double ye = E.y;
         double ze = E.z;
         double xd = D.x;
         double yd = D.y;
         double zd = D.z;
-
-        // get torus parameters
-        double R = this.radius_torus;
-        double r = this.radius_tube;
 
         // calculate coefficients for t: c4(t^4) + c3(t^3) + c2(t^2) + c1(t) + c0 = 0
         double[] c = new double[5];
