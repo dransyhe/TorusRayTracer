@@ -40,7 +40,7 @@ public class Torus extends SceneObject{
 
     @Override
     public RaycastHit intersectionWith(Ray ray) {
-        // Get ray parameters
+        // get ray parameters
         Vector3 E = ray.getOrigin();
         Vector3 D = ray.getDirection();
         double xe = E.x;
@@ -50,11 +50,11 @@ public class Torus extends SceneObject{
         double yd = D.y;
         double zd = D.z;
 
-        // Get torus parameters
+        // get torus parameters
         double R = this.radius_torus;
         double r = this.radius_tube;
 
-        // Calculate coefficients for t: c4(t^4) + c3(t^3) + c2(t^2) + c1(t) + c0 = 0
+        // calculate coefficients for t: c4(t^4) + c3(t^3) + c2(t^2) + c1(t) + c0 = 0
         double[] c = new double[5];
         double base1 = xd * xd + yd * yd + zd * zd;
         double base2 = xe * xd + ye * yd + ze * zd;
@@ -65,23 +65,21 @@ public class Torus extends SceneObject{
         c[1] = 4.0 * base3 * base2 + 8.0 * R * R * ye * yd;
         c[0] = base3 * base3 - 4.0 * R * R * (r * r - ye * ye);
 
-        // Calculate the value of t using QuarticRootFinder
+        // calculate the value(s) of t using QuarticRootFinder
         QuarticRootFinder qr = new QuarticRootFinder();
         double[] t = qr.QuarticRoot(c);
 
-        // Find the nearest (smallest), non-negative t
+        // find the nearest (smallest), non-negative t
         double min_t = Double.MAX_VALUE;
-        for (int i = 0; i < 4; i ++) {
+        for (int i = 0; i < t.length; i ++) {
             if (t[i] > 0) min_t = Math.min(min_t, t[i]);
         }
 
-        // Calculate distance, intersection location, normal
+        // calculate distance, intersection location, normal
         RaycastHit rc = new RaycastHit();
         if (min_t != Double.MAX_VALUE){
-            Vector3 location = E.add(D.scale(min_t));
-            double distance = location.subtract(E).magnitude();
-            Vector3 normal;
-            rc = new RaycastHit(this, distance, location, normal);
+            Vector3 location = ray.evaluateAt(min_t);
+            rc = new RaycastHit(this, min_t, location, this.getNormalAt(location));
         }
 
         return rc;
@@ -89,6 +87,13 @@ public class Torus extends SceneObject{
 
     @Override
     public Vector3 getNormalAt(Vector3 position) {
-        return null;
+        // calculate the normal of the torus surface at a given position
+        double x = position.x;
+        double y = position.y;
+        double z = position.z;
+        double base = (x * x + y * y + z * z) - (radius_torus * radius_torus + radius_tube * radius_torus);
+        return new Vector3(4.0 * x * base,
+                           4.0 * y * (base + 2.0 * radius_torus * radius_tube),
+                           4.0 * z * base).normalised();
     }
 }
