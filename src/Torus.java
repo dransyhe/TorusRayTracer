@@ -1,9 +1,11 @@
 import java.awt.*;
 
 public class Torus extends SceneObject{
+    public static final double EPSILON = 1.0E-7f;
 
     // torus parameters
     private Vector3 position;
+    private Vector3 axis;
     private double radius_torus;
     private double radius_tube;
 
@@ -13,8 +15,9 @@ public class Torus extends SceneObject{
     private final double TORUS_ALPHA = 10;
     private final double TORUS_REFLECTIVITY = 0.3;
 
-    public Torus(Vector3 position, double radius_torus, double radius_tube, ColorRGB colour){
+    public Torus(Vector3 position, Vector3 axis, double radius_torus, double radius_tube, ColorRGB colour){
         this.position = position;
+        this.axis = axis.normalised();
         this.radius_torus = radius_torus;
         this.radius_tube = radius_tube;
         this.colour = colour;
@@ -24,9 +27,10 @@ public class Torus extends SceneObject{
         this.reflectivity = TORUS_REFLECTIVITY;
     }
 
-    public Torus(Vector3 position, double radius_torus, double radius_tube, ColorRGB colour,
+    public Torus(Vector3 position, Vector3 axis, double radius_torus, double radius_tube, ColorRGB colour,
                  double kD, double kS, double alphaS, double reflectivity) {
         this.position = position;
+        this.axis = axis.normalised();
         this.radius_torus = radius_torus;
         this.radius_tube = radius_tube;
         this.colour = colour;
@@ -42,37 +46,41 @@ public class Torus extends SceneObject{
         double R = this.radius_torus;
         double r = this.radius_tube;
         Vector3 C = this.position;
+        Vector3 A = this.axis;
 
         // get ray parameters
-        Vector3 E = ray.getOrigin().subtract(C);
+        Vector3 E = ray.getOrigin();
         Vector3 D = ray.getDirection();
 
-        double xe = E.x;
-        double ye = E.y;
-        double ze = E.z;
-        double xd = D.x;
-        double yd = D.y;
-        double zd = D.z;
+        // transform the ray (because equation only works for torus centering at origin)
+        Vector3 centerToRayOrigin = E.subtract(C);
+        double centerToRayOriginDotDirection = D.dot(centerToRayOrigin);
+        double	centerToRayOriginDotDirectionSquared = centerToRayOrigin.dot(centerToRayOrigin);
+        double innerRadiusSquared = r * r;
+        double outerRadiusSquared = R * R;
+        double axisDotCenterToRayOrigin	= A.dot(centerToRayOrigin);
+        double axisDotRayDirection = A.dot(D);
+        double a = 1 - axisDotRayDirection * axisDotRayDirection;
+        double b = 2 * (centerToRayOrigin.dot(D) - axisDotCenterToRayOrigin * axisDotRayDirection);
+        double c = centerToRayOriginDotDirectionSquared - axisDotCenterToRayOrigin * axisDotCenterToRayOrigin;
+        double d = centerToRayOriginDotDirectionSquared + outerRadiusSquared - innerRadiusSquared;
 
-        // calculate coefficients for t: c4(t^4) + c3(t^3) + c2(t^2) + c1(t) + c0 = 0
-        double[] c = new double[5];
-        double base1 = xd * xd + yd * yd + zd * zd;
-        double base2 = xe * xd + ye * yd + ze * zd;
-        double base3 = xe * xe + ye * ye + ze * ze - (r * r + R * R);
-        c[4] = base1 * base1;
-        c[3] = 4.0 * base1 * base2;
-        c[2] = 2.0 * base1 * base3 + 4.0 * base2 * base2 + 4.0 * R * R * yd * yd;
-        c[1] = 4.0 * base3 * base2 + 8.0 * R * R * ye * yd;
-        c[0] = base3 * base3 - 4.0 * R * R * (r * r - ye * ye);
+        // calculate the coefficients for c4(x^4) + c3(c^3) + c2(c^2) + c1(c) + c0 = 0
+        double[] coefficients = new double[5];
+        coefficients[4] = 1;
+        coefficients[3] = 4 * centerToRayOriginDotDirection;
+        coefficients[2] = 2 * d + coefficients[3] * coefficients[3] * 0.25f - 4 * outerRadiusSquared * a;
+        coefficients[1] = coefficients[3] * d - 4 * outerRadiusSquared * b;
+        coefficients[0] = d * d - 4 * outerRadiusSquared * c;
 
         // calculate the value(s) of t using QuarticRootFinder
         QuarticRootFinder qr = new QuarticRootFinder();
-        double[] t = qr.QuarticRoot(c);
+        double[] t = qr.QuarticRoot(coefficients);
 
         // find the nearest (smallest), non-negative t
         double min_t = Double.MAX_VALUE;
         for (int i = 0; i < t.length; i ++) {
-            if (t[i] > 0) min_t = Math.min(min_t, t[i]);
+            if (t[i] > EPSILON && min_t - t[i] > EPSILON) min_t = t[i];
         }
 
         // calculate distance, intersection location, normal
@@ -86,14 +94,13 @@ public class Torus extends SceneObject{
     }
 
     @Override
-    public Vector3 getNormalAt(Vector3 position) {
+    public Vector3 getNormalAt(Vector3 point) {
         // calculate the normal of the torus surface at a given position
-        double x = position.x;
-        double y = position.y;
-        double z = position.z;
-        double base = (x * x + y * y + z * z) - (radius_torus * radius_torus + radius_tube * radius_torus);
-        return new Vector3(4.0 * x * base,
-                           4.0 * y * (base + 2.0 * radius_torus * radius_tube),
-                           4.0 * z * base).normalised();
+        Vector3 centerToPoint = point.subtract(this.position);
+        double centerToPointDotAxis = centerToPoint.dot(this.axis);
+        Vector3 direction = centerToPoint.subtract(this.axis.scale(centerToPointDotAxis));
+        direction = direction.normalised();
+        Vector3 normal = point.subtract(this.position).add(direction.scale(this.radius_torus));
+        return normal.normalised();
     }
 }

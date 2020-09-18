@@ -43,11 +43,21 @@ public class SceneLoader {
                     break;
 
                 case "torus":
-                    Torus torus = new Torus(getPosition(element), getDouble(element, "radius_torus", 1),
+                    Torus torus = new Torus(getPosition(element), getAxis(element),
+                            getDouble(element, "radius_torus", 1),
                             getDouble(element, "radius_tube", 1), getColour(element),
                             getDouble(element, "kD", 0.8), getDouble(element, "kS", 1.2),
                             getDouble(element, "alphaS", 10), getDouble(element, "reflectivity", 0.3));
                     scene.addObject(torus);
+                    break;
+
+                case "plane":
+                    Plane plane = new Plane(getPosition(element), getNormal(element), getColour(element),
+                            getDouble(element, "kD", 0.8), getDouble(element, "kS", 1.2),
+                            getDouble(element, "alphaS", 10), getDouble(element, "reflectivity", 0.3)
+                    );
+                    scene.addObject(plane);
+                    break;
 
                 case "ambient-light":
                     scene.setAmbientLight(getColour(element).scale(getDouble(element, "intensity", 1)));
@@ -67,6 +77,13 @@ public class SceneLoader {
         double x = getDouble(tag, "x", 0);
         double y = getDouble(tag, "y", 0);
         double z = getDouble(tag, "z", 0);
+        return new Vector3(x, y, z);
+    }
+
+    private Vector3 getAxis(Element tag) {
+        double x = getDouble(tag, "x1", 0);
+        double y = getDouble(tag, "y1", 0);
+        double z = getDouble(tag, "z1", 0);
         return new Vector3(x, y, z);
     }
 
